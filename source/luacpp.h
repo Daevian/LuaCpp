@@ -18,17 +18,8 @@
 #ifndef CLOUD_LUA_CPP_HEADER
 #define CLOUD_LUA_CPP_HEADER
 
+#include "lua.hpp"
 #include "utility.h"
-
-#include "src/lua.hpp"
-
-#include <sstream>
-#include <memory>
-#include <functional>
-#include <typeinfo>
-#include <unordered_map>
-#include "../../core_libraries/debugging/DebugLog.h"
-#include "../../core_libraries/utilities/DefinesMacros.h"
 
 namespace Cloud
 {
@@ -69,13 +60,15 @@ namespace Cloud
             }
         };
 
-        typedef std::unique_ptr<lua_State, Deleter> StateUniquePtr;
+        using StateUniquePtr = UniquePtr<lua_State, Deleter>;
 
         int LuaPrint(lua_State* state);
         int LuaPanic(lua_State* state);
         
         StateUniquePtr NewState();
         StateUniquePtr NewStateAndSetup();
+
+        void DefaultTrace(const CLchar* output, ...);
     }
 
 }

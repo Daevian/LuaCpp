@@ -20,6 +20,7 @@
 
 #include "function.h"
 #include "stack_sentry.h"
+#include "config.h"
 
 namespace Cloud
 {
@@ -32,24 +33,24 @@ namespace Cloud
         virtual ~LuaStateEx() override {};
 
         template <typename _Return, typename... _Args>
-        void RegisterFunction(const CLchar* funcName, const std::function<_Return(_Args...)>& func)
+        void RegisterFunction(const CLchar* funcName, const Lua::Function<_Return(_Args...)>& func)
         {
             LuaStackSentry sentry(*this);
 
-            auto luaFunc = std::make_unique<LuaFunction<_Return, _Args...>>(*this, funcName, func);
+            auto luaFunc = Lua::MakeUnique<LuaFunction<_Return, _Args...>>(*this, funcName, func);
             m_functions[funcName] = std::move(luaFunc);
         }
 
         template <typename _Return>
-        void RegisterFunction(const CLchar* funcName, const std::function<_Return()>& func)
+        void RegisterFunction(const CLchar* funcName, const Lua::Function<_Return()>& func)
         {
             LuaStackSentry sentry(*this);
 
-            auto luaFunc = std::make_unique<LuaFunction<_Return>>(*this, funcName, func);
+            auto luaFunc = Lua::MakeUnique<LuaFunction<_Return>>(*this, funcName, func);
             m_functions[funcName] = std::move(luaFunc);
         }
 
-        template <size_t, typename... _Types>
+        template <CLsize_t, typename... _Types>
         struct ReadbackTypeTrait
         {
             template <typename _T>
@@ -116,7 +117,7 @@ namespace Cloud
             constexpr auto argCount = sizeof...(_Args);
             constexpr auto retCount = sizeof...(_ReturnArgs);
             auto error = PCall(argCount, retCount);
-            CL_UNUSED(error);
+            LUACPP_UNUSED(error);
 
             return PopReturn<_ReturnArgs...>();
 
@@ -134,10 +135,10 @@ namespace Cloud
             // ORDER NOT GUARATEED!
         }
 
-        template <class TYPE>
-        static void PushLightUserDataChecked(TYPE* pointer)
+        template <class _T>
+        static void PushLightUserDataChecked(_T* pointer)
         {
-            auto typeId = getUniqueTypeId<TYPE>();
+            auto typeId = getUniqueTypeId<_T>();
             // lock
             s_pointerTypeRegister[pointer] = typeId;
             //unlock
@@ -145,12 +146,12 @@ namespace Cloud
             PushLightUserData(pointer);
         }
 
-        template <class TYPE>
-        static TYPE* ToUserDataChecked(CLint index)
+        template <class _T>
+        static _T* ToUserDataChecked(CLint index)
         {
-            const auto castTypeId = getUniqueTypeId<TYPE>();
+            const auto castTypeId = getUniqueTypeId<_T>();
 
-            auto&& pointer = ToUserData<TYPE>(index);
+            auto&& pointer = ToUserData<_T>(index);
 
             // lock
             const auto registeredTypeId = s_pointerTypeRegister[pointer];
@@ -163,16 +164,15 @@ namespace Cloud
             else
             {
                 // lock
-#ifdef _DEBUG
+#ifdef LUACPP_DEBUG
                 const char* registeredTypeName = s_typenames[registeredTypeId].c_str();
 #else
                 const char* registeredTypeName = "<type not available>";
 #endif
-                CL_TRACE_CHANNEL("LUA",
-                                 "Lua ToUserData cast error:\n"
-                                 "Trying to cast stack index %d, ptr:%p '%s (typeid:%zu)' to '%s (typeid:%zu)'\n"
-                                 "ToUserData will return nullptr",
-                                 index, pointer, registeredTypeName, s_pointerTypeRegister[pointer], typeid(TYPE).name(), castTypeId);
+                LUACPP_TRACE("Lua ToUserData cast error:\n"
+                             "Trying to cast stack index %d, ptr:%p '%s (typeid:%zu)' to '%s (typeid:%zu)'\n"
+                             "ToUserData will return nullptr",
+                             index, pointer, registeredTypeName, s_pointerTypeRegister[pointer], typeid(_T).name(), castTypeId);
                 // unlock
                 return nullptr;
             }
@@ -185,8 +185,8 @@ namespace Cloud
             size_t result = id;
             // lock
             ++id;
-            CL_UNUSED(name);
-#ifdef _DEBUG
+            LUACPP_UNUSED(name);
+#ifdef LUACPP_DEBUG
 
             s_typenames[result] = name;
 
@@ -195,19 +195,19 @@ namespace Cloud
             return result;
         }
 
-        template <typename TYPE>
+        template <typename _T>
         static size_t getUniqueTypeId()
         {
-            static size_t id = NextTypeId(typeid(TYPE).name());
+            static size_t id = NextTypeId(typeid(_T).name());
             return id;
         }
 
-        static std::unordered_map<void*, size_t> s_pointerTypeRegister;
-#ifdef _DEBUG
-        static std::unordered_map<size_t, std::string> s_typenames;
+        static Lua::UnorderedMap<void*, size_t> s_pointerTypeRegister;
+#ifdef LUACPP_DEBUG
+        static Lua::UnorderedMap<size_t, Lua::String> s_typenames;
 #endif
 
-        std::unordered_map<const char*, std::unique_ptr<LuaFunctionBase>> m_functions;
+        Lua::UnorderedMap<const char*, Lua::UniquePtr<LuaFunctionBase>> m_functions;
     };
 }
 

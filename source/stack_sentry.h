@@ -15,11 +15,10 @@
 * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include "../utilities/DefinesTypes.h"
 #ifndef CLOUD_LUA_CPP_STACK_SENTRY_HEADER
 #define CLOUD_LUA_CPP_STACK_SENTRY_HEADER
 
-#include "../../core_libraries/utilities/DefinesTypes.h"
+#include "luacpp.h"
 
 namespace Cloud
 {

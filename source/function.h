@@ -31,11 +31,11 @@ namespace Cloud
         virtual CLint Invoke(LuaState& state) = 0;
     };
 
-    template <typename T_Return, typename... T_Args>
+    template <typename _Return, typename... _Args>
     class LuaFunction : public LuaFunctionBase
     {
-        using Func = std::function<T_Return(T_Args...)>;
-        using ArgsTuple = std::tuple<T_Args...>;
+        using Func = Lua::Function<_Return(_Args...)>;
+        using ArgsTuple = std::tuple<_Args...>;
 
     public:
         LuaFunction(LuaState& state, const CLchar* funcName, const Func& func)
@@ -63,53 +63,53 @@ namespace Cloud
             m_state.SetGlobal(m_funcName);
         }
 
-        template <typename... T_Types, std::size_t... N>
-        static auto GetArgs(LuaState& state, const CLint stackIndex, Indices<N...>)
+        template <typename... _Types, CLsize_t... _N>
+        static auto GetArgs(LuaState& state, const CLint stackIndex, Indices<_N...>)
         {
-            CL_UNUSED(state);
-            CL_UNUSED(stackIndex);
-            return std::make_tuple(state.To<T_Types>(stackIndex + N)...);
+            LUACPP_UNUSED(state);
+            LUACPP_UNUSED(stackIndex);
+            return std::make_tuple(state.To<_Types>(stackIndex + _N)...);
         }
 
-        template <typename... T_Types>
+        template <typename... _Types>
         static auto GetArgs(LuaState& state, const CLint stackIndex)
         {
-            constexpr auto numArgs = sizeof...(T_Types);
-            return GetArgs<T_Types...>(state, stackIndex, IndicesBuilderType<numArgs>());
+            constexpr auto numArgs = sizeof...(_Types);
+            return GetArgs<_Types...>(state, stackIndex, IndicesBuilderType<numArgs>());
         }
 
-        template <typename... T_Args, std::size_t... N>
-        static auto CallFunction(Func&& func, ArgsTuple&& args, Indices<N...>)
+        template <typename... _Args, CLsize_t... _N>
+        static auto CallFunction(Func&& func, ArgsTuple&& args, Indices<_N...>)
         {
-            CL_UNUSED(args);
-            return std::forward<Func>(func)(std::get<N>(std::forward<ArgsTuple>(args))...);
+            LUACPP_UNUSED(args);
+            return std::forward<Func>(func)(std::get<_N>(std::forward<ArgsTuple>(args))...);
         }
 
         static auto CallFunction(Func&& func, ArgsTuple&& args)
         {
-            return CallFunction(std::forward<Func>(func), std::forward<ArgsTuple>(args), IndicesBuilderType<sizeof...(T_Args)>());
+            return CallFunction(std::forward<Func>(func), std::forward<ArgsTuple>(args), IndicesBuilderType<sizeof...(_Args)>());
         }
 
-        template<typename T_Return, std::size_t T_NumArgs, typename... T_Args>
+        template<typename _Return, CLsize_t _NumArgs, typename... _Args>
         struct Invoker
         {
             static CLint Apply(LuaState& state, Func&& func)
             {
-                constexpr auto numArgs = static_cast<CLint>(sizeof...(T_Args));
-                auto&& args = GetArgs<T_Args...>(state, -numArgs);
+                constexpr auto numArgs = static_cast<CLint>(sizeof...(_Args));
+                auto&& args = GetArgs<_Args...>(state, -numArgs);
                 auto&& ret = CallFunction(std::forward<Func>(func), std::forward<ArgsTuple>(args));
                 state.Push(ret);
                 return 1;
             }
         };
 
-        template<std::size_t T_NumArgs, typename... T_Args>
-        struct Invoker<void, T_NumArgs, T_Args...>
+        template<CLsize_t _NumArgs, typename... _Args>
+        struct Invoker<void, _NumArgs, _Args...>
         {
             static CLint Apply(LuaState& state, Func&& func)
             {
-                constexpr auto numArgs = static_cast<CLint>(sizeof...(T_Args));
-                auto&& args = GetArgs<T_Args...>(state, -numArgs);
+                constexpr auto numArgs = static_cast<CLint>(sizeof...(_Args));
+                auto&& args = GetArgs<_Args...>(state, -numArgs);
                 CallFunction(std::forward<Func>(func), std::forward<ArgsTuple>(args));
                 return 0;
             }
@@ -117,12 +117,12 @@ namespace Cloud
 
         CLint Invoke(LuaState& state) override
         {
-            return Invoker<T_Return, sizeof...(T_Args), T_Args...>::Apply(state, std::forward<Func>(m_function));
+            return Invoker<_Return, sizeof...(_Args), _Args...>::Apply(state, std::forward<Func>(m_function));
         }
 
         static CLint InvokeBase(lua_State* state)
         {
-            auto* func = static_cast<LuaFunction<T_Return, T_Args...>*>(lua_touserdata(state, lua_upvalueindex(1)));
+            auto* func = static_cast<LuaFunction<_Return, _Args...>*>(lua_touserdata(state, lua_upvalueindex(1)));
             return func->Invoke(func->m_state);
         }
 

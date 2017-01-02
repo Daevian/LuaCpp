@@ -188,7 +188,7 @@ Cloud::Lua::ErrorCode Cloud::LuaState::LoadFile(const CLchar* fileName)
         if (lua_isstring(GetState(), -1))
         {
             const char* err = lua_tostring(GetState(), -1);
-            CL_TRACE_CHANNEL("LUA", "Lua file error:\n%s", err);
+            LUACPP_TRACE("Lua file error:\n%s", err);
         }
     }
 
@@ -197,7 +197,7 @@ Cloud::Lua::ErrorCode Cloud::LuaState::LoadFile(const CLchar* fileName)
         if (lua_isstring(GetState(), -1))
         {
             const char* err = lua_tostring(GetState(), -1);
-            CL_TRACE_CHANNEL("LUA", "Lua syntax error:\n%s", err);
+            LUACPP_TRACE("Lua syntax error:\n%s", err);
         }
     }
 
@@ -226,7 +226,7 @@ Cloud::Lua::ErrorCode Cloud::LuaState::PCall(CLint argCount, CLint retArgCount)
         if (lua_isstring(GetState(), -1))
         {
             const char* err = lua_tostring(GetState(), -1);
-            CL_TRACE_CHANNEL("LUA", "Lua run error:\n%s", err);
+            LUACPP_TRACE("Lua run error:\n%s", err);
         }
     }
 

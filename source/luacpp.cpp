@@ -20,21 +20,21 @@
 int Cloud::Lua::LuaPrint(lua_State* state)
 {
     int nargs = lua_gettop(state);
-    std::stringstream stream;
+    Lua::Stringstream stream;
 
     for (int i = 1; i <= nargs; ++i)
     {
         stream << lua_tostring(state, i);
     }
 
-    CL_TRACE_CHANNEL("LUA", stream.str().c_str());
+    LUACPP_TRACE(stream.str().c_str());
 
     return 0;
 }
 
 int Cloud::Lua::LuaPanic(lua_State* state)
 {
-    CL_TRACE_CHANNEL("LUA", "PANIC: unprotected error in call to Lua API:\n(%s)\n", lua_tostring(state, -1));
+    LUACPP_TRACE("PANIC: unprotected error in call to Lua API:\n(%s)\n", lua_tostring(state, -1));
     return 0;  /* return to Lua to abort */
 }
 
@@ -70,4 +70,15 @@ Cloud::Lua::StateUniquePtr Cloud::Lua::NewStateAndSetup()
 
 
     return luaState;
+}
+
+void Cloud::Lua::DefaultTrace(const CLchar* output, ...)
+{
+    va_list argList;
+    va_start(argList, output);
+
+    printf(output, argList);
+    printf("\n");
+
+    va_end(argList);
 }
